@@ -20,7 +20,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(),
-      home: const MyHomePage(title: 'Car Controll Dashboard'),
+      home: const MyHomePage(),
     );
   }
 }
