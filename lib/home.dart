@@ -1,4 +1,4 @@
-// ignore_for_file: avoid_print, use_build_context_synchronously
+// ignore_for_file: avoid_print, use_build_context_synchronously, unnecessary_brace_in_string_interps
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bluetooth_seria_changed/flutter_bluetooth_serial.dart';
@@ -23,10 +23,10 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState () {
     super.initState();
     setState(() {
-      if(switchValue == true){
-        isconnected = "Connected !";
-      }else{
+      if(switchValue == false || bluetoothConnection == null){
         isconnected = "Not Connected !";
+      }else{
+        isconnected = "Connected !";
       }
     });
   }
@@ -40,6 +40,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _sendData(String data) {
+    print("Sending Data : ${data}");
     try {
       if (bluetoothConnection != null) {
         bluetoothConnection!.output.add(Uint8List.fromList(data.codeUnits));
@@ -68,25 +69,32 @@ class _MyHomePageState extends State<MyHomePage> {
       final BluetoothConnection connection = await BluetoothConnection.toAddress(device.address);
       print('Connected to ${device.name}');
       print(device.name);
-      Navigator.of(context).pop();
+      setState(() {
+        switchValue = true;
+        if(switchValue == false || bluetoothConnection == null){
+          isconnected = "Not Connected !";
+        }else{
+          isconnected = "Connected !";
+        }
+      });
       bluetoothConnection = connection;
+      Navigator.of(context).pop();
       connection.input!.listen((Uint8List data) {
-        setState(() {
-          switchValue = true;
-        });
         print("listening:");
         print(data);
       }).onDone(() {
         setState(() {
           switchValue = false;
+          if(switchValue == false || bluetoothConnection == null){
+            isconnected = "Not Connected !";
+          }else{
+            isconnected = "Connected !";
+          }
         });
         print('Device Disconnected.');
         bluetoothConnection = null;
       });
     } catch (error) {
-      setState(() {
-        switchValue = false;
-      });
       print('Error connecting to ${device.name}: $error');
     }
   }
@@ -113,17 +121,6 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Future<void> _checkBluetoothStatus(BuildContext context) async {
-    bool isEnabled = (await FlutterBluetoothSerial.instance.isEnabled) ?? false;
-    if (!isEnabled) {
-      print("Blutooth OFF");
-      _askUserToEnableBluetooth(context); // Pass context here
-    } else {
-      print("Blutooth ON");
-      _startDiscovery(context);
-    }
-  }
-
   void _startDiscovery(BuildContext context) async {
     print("Started");
     setState(() {
@@ -138,35 +135,48 @@ class _MyHomePageState extends State<MyHomePage> {
         print("Added");
         _devicesList.add(device);
       });
+    }).onDone(() {
+      print("Scanning completed");
+      _showCustomDialog(context);
     });
   }
 
-  Future<void> requestBluetoothScanPermission(BuildContext context) async {
+  Future<void> _checkBluetoothStatus(BuildContext context) async {
     print('Check2');
+    bool isEnabled = (await FlutterBluetoothSerial.instance.isEnabled) ?? false;
+    if (!isEnabled) {
+      print("Blutooth OFF");
+      _askUserToEnableBluetooth(context);
+    } else {
+      print("Blutooth ON");
+      _startDiscovery(context);
+    }
+  }
+
+  Future<void> requestBluetoothScanPermission(BuildContext context) async {
+    print("Check1");
     var status = await Permission.bluetoothScan.status;
     if (status.isDenied) {
       PermissionStatus result = await Permission.bluetoothScan.request();
       if (result.isGranted) {
-        print('Granted');
-        _startDiscovery(context);
+        print('Granted, Bluetooth check');
+        _checkBluetoothStatus(context);
       } else {
         print("Not granted");
       }
     } else if (status.isPermanentlyDenied) {
-      print('Bluetooth settings');
+      print('Request settings');
       openAppSettings();
     } else {
-      print('Bluetooth check');
+      print('All ready Granted, Bluetooth check');
       _checkBluetoothStatus(context);
     }
   }
 
-  Future<void> _showCustomDialog(BuildContext context) async {
+  void _showCustomDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        print("Check1");
-        requestBluetoothScanPermission(context);
         return Dialog(
           child: Container(
             padding: const EdgeInsets.all(16.0),
@@ -185,7 +195,16 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                   SizedBox(
                     height: MediaQuery.of(context).size.height * 0.5,
-                    child: ListView.builder(
+                    child: _devicesList.isEmpty
+                  ? const Center(
+                    child: Text(
+                      'No devices !',
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 20,
+                      ),
+                    ))
+                  : ListView.builder(
                       shrinkWrap: true,
                       itemCount: _devicesList.length,
                       itemBuilder: (context, index) {
@@ -268,9 +287,9 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                   elevation: 4, // Add elevation
                 ),
-                onPressed: () {
-                  _showCustomDialog(context);
-                  print("Check");
+                onPressed: () async {
+                  await requestBluetoothScanPermission(context);
+                  print("Connected");
                 },
                 child: const Text(
                   "Pair",
@@ -296,7 +315,15 @@ class _MyHomePageState extends State<MyHomePage> {
                         padding: const EdgeInsets.all(10.0,), // Set padding to zero
                       ),
                       onPressed: () {
-                        // Handle forward button press
+                        setState(() {
+                          if(switchValue == false || bluetoothConnection == null){
+                            switchValue = false;
+                            isconnected = "Not Connected !";
+                          }else{
+                            isconnected = "Connected !";
+                          }
+                        });
+                        _sendData("left");
                       },
                       child: Image.asset(
                         'assets/left.png',
@@ -310,7 +337,15 @@ class _MyHomePageState extends State<MyHomePage> {
                         padding: const EdgeInsets.all(10.0,), // Set padding to zero
                       ),
                       onPressed: () {
-                        // Handle rightward button press
+                        setState(() {
+                          if(switchValue == false || bluetoothConnection == null){
+                            switchValue = false;
+                            isconnected = "Not Connected !";
+                          }else{
+                            isconnected = "Connected !";
+                          }
+                        });
+                        _sendData("right");
                       },
                       child: Image.asset(
                         'assets/right.png',
@@ -333,7 +368,15 @@ class _MyHomePageState extends State<MyHomePage> {
                   padding: const EdgeInsets.all(10.0,), // Set padding to zero
                 ),
                 onPressed: () {
-                  // Handle brake button press
+                  setState(() {
+                    if(switchValue == false || bluetoothConnection == null){
+                      switchValue = false;
+                      isconnected = "Not Connected !";
+                    }else{
+                      isconnected = "Connected !";
+                    }
+                  });
+                  _sendData("brake");
                 },
                 child: Image.asset(
                   'assets/brake.png',
@@ -355,7 +398,15 @@ class _MyHomePageState extends State<MyHomePage> {
                         padding: const EdgeInsets.all(10.0,), // Set padding to zero
                       ),
                       onPressed: () {
-                        // Handle forward button press
+                        setState(() {
+                          if(switchValue == false || bluetoothConnection == null){
+                            switchValue = false;
+                            isconnected = "Not Connected !";
+                          }else{
+                            isconnected = "Connected !";
+                          }
+                        });
+                        _sendData("forward");
                       },
                       child: Image.asset(
                         'assets/up.png',
@@ -369,7 +420,15 @@ class _MyHomePageState extends State<MyHomePage> {
                         padding: const EdgeInsets.all(10.0,), // Set padding to zero
                       ),
                       onPressed: () {
-                        // Handle rightward button press
+                        setState(() {
+                          if(switchValue == false || bluetoothConnection == null){
+                            switchValue = false;
+                            isconnected = "Not Connected !";
+                          }else{
+                            isconnected = "Connected !";
+                          }
+                        });
+                        _sendData("backward");
                       },
                       child: Image.asset(
                         'assets/down.png',
