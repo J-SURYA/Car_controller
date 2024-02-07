@@ -46,14 +46,15 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  void _sendData(String data) {
+  Future<void>  _sendData(String data) async {
     print("Sending Data : ${data}");
     try {
       if (bluetoothConnection != null) {
         bluetoothConnection!.output.add(Uint8List.fromList(data.codeUnits));
-        bluetoothConnection!.output.allSent.then((_) {
+        await bluetoothConnection!.output.allSent.then((_) {
           print('Data sent: $data');
         });
+        
       } else {
         print("Not connected");
         setState(() {
@@ -79,11 +80,7 @@ class _MyHomePageState extends State<MyHomePage> {
       print(device.name);
       setState(() {
         switchValue = true;
-        if (switchValue == false || bluetoothConnection == null) {
-          isconnected = "Not Connected !";
-        } else {
-          isconnected = "Connected !";
-        }
+        isconnected = "Connected !";
       });
       bluetoothConnection = connection;
       Navigator.of(context).pop();
@@ -348,7 +345,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     GestureDetector(
                       onLongPressStart: (_) {
                         _timer1 = Timer.periodic(
-                            const Duration(milliseconds: 1000), (_) {
+                            const Duration(milliseconds: 300), (_) {
                           setState(() {
                             if (switchValue == false ||
                                 bluetoothConnection == null) {
@@ -394,7 +391,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     GestureDetector(
                       onLongPressStart: (_) {
                         _timer2 = Timer.periodic(
-                            const Duration(milliseconds: 100), (_) {
+                            const Duration(milliseconds: 300), (_) {
                           setState(() {
                             if (switchValue == false ||
                                 bluetoothConnection == null) {
@@ -450,7 +447,7 @@ class _MyHomePageState extends State<MyHomePage> {
               child: GestureDetector(
                 onLongPressStart: (_) {
                   _timer3 =
-                      Timer.periodic(const Duration(milliseconds: 100), (_) {
+                      Timer.periodic(const Duration(milliseconds: 300), (_) {
                     setState(() {
                       if (switchValue == false || bluetoothConnection == null) {
                         switchValue = false;
@@ -500,7 +497,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     GestureDetector(
                       onLongPressStart: (_) {
                         _timer4 = Timer.periodic(
-                            const Duration(milliseconds: 100), (_) {
+                            const Duration(milliseconds: 300), (_) {
                           setState(() {
                             if (switchValue == false ||
                                 bluetoothConnection == null) {
@@ -546,7 +543,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     GestureDetector(
                       onLongPressStart: (_) {
                         _timer5 = Timer.periodic(
-                            const Duration(milliseconds: 100), (_) {
+                            const Duration(milliseconds: 300), (_) {
                           setState(() {
                             if (switchValue == false ||
                                 bluetoothConnection == null) {
